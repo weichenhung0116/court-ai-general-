@@ -670,7 +670,7 @@ const I18N_EN = {
   "比賽獎勵辦法":"Game rewards","比賽日期":"Game dates","預賽積分":"Prelim points","預賽排名":"Prelim rankings","冠軍戰":"Final",
   "依隊員編號輪流上場，跨場次累計讓每個人的上場時間平衡。":"Players rotate by number, balanced across games so everyone gets similar playing time.",
   "3 人組每場全程上場，沒有輪休。":"3-player groups play the whole game with no rest.",
-  "老師還沒有設定名單。請向老師索取「學生連結」，用該連結開啟本平台。":"Your teacher has not set up the roster yet. Ask your teacher for the student link and open the platform with it.",
+  "這個瀏覽器還沒有收到名單。請直接點老師給的「學生連結」（網址很長、含 #setup=）開啟；若在 LINE 裡，請按右上角「⋯」改用 Safari／Chrome 開啟，不要自己手打網址。":"This browser has not received the roster yet. Open the full student link from your teacher (a long URL containing #setup=). If you are inside LINE, use the ⋯ menu to open it in Safari/Chrome instead of typing the address.",
   // ---------- 07 成績 ----------
   "課堂表現及期末成績規範":"Class Performance & Final Grade","成績":"Grades",
   "比賽共 4 節課：預賽 2 節（11/26、12/10）、決賽 2 節（12/17、12/24）。上面看自己的進度，下面是規範。":"There are 4 game sessions: 2 preliminary (11/26, 12/10) and 2 final (12/17, 12/24). Your progress is at the top and the requirements are below.",
@@ -2189,6 +2189,8 @@ function importCourseFromHash(){
     if(!cfg || !Array.isArray(cfg.classes)) throw new Error('bad config');
     // 老師在自己的裝置打開學生連結時，保留原本的名單文字（含程度）
     const local = lsGet(COURSE_KEY, null);
+    // 本機已有比較新的設定（例如老師剛改過名單）就不要被舊連結蓋掉
+    if(local && (local.updatedAt || 0) > (cfg.updatedAt || 0)) return true;
     if(local && Array.isArray(local.classes)){
       cfg.classes.forEach(c=>{
         const old = local.classes.find(x=>x.id === c.id);
@@ -2200,7 +2202,8 @@ function importCourseFromHash(){
     console.warn(e);
     alert('這個名單連結無法讀取，可能複製不完整，請向老師重新索取。');
   }
-  history.replaceState(null, '', location.pathname + location.search);
+  // 不清除網址中的 #setup=…：學生從 LINE 等 App 內建瀏覽器「改用 Safari／Chrome 開啟」、
+  // 或重新整理、加入書籤時，名單資料才會跟著網址一起帶過去。
   return true;
 }
 
@@ -2590,7 +2593,7 @@ function renderSchedule(){
   if(schedState.cls && schedState.group && !SCHEDULE_DATA[schedState.cls].groups[schedState.group]){ schedState.group = null; schedState.me = null; saveSchedState(); }
   document.getElementById('classPicker').innerHTML = ids.length ? ids.map(id=>{ const c = CLASSES[id];
     return `<button class="${schedState.cls===id?'active':''}" onclick="setClass('${id}')"><b>${escapeHtml(c.label)}</b><small>${c.teams} 組・${c.students} 人</small></button>`;
-  }).join('') : '<div class="callout warn" style="grid-column:1/-1;">老師還沒有設定名單。請向老師索取「學生連結」，用該連結開啟本平台。</div>';
+  }).join('') : '<div class="callout warn" style="grid-column:1/-1;">這個瀏覽器還沒有收到名單。請直接點老師給的「學生連結」（網址很長、含 #setup=）開啟；若在 LINE 裡，請按右上角「⋯」改用 Safari／Chrome 開啟，不要自己手打網址。</div>';
   const body = document.getElementById('scheduleBody');
   if(!schedState.cls){ body.hidden = true; return; }
   body.hidden = false;
